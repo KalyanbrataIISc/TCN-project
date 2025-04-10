@@ -1,8 +1,8 @@
 from neuron import h, gui
 import numpy as np
+from PIL import Image
 import torch
 import matplotlib.pyplot as plt
-from PIL import Image
 import os
 
 # Load the trained ANN model weights
@@ -82,12 +82,12 @@ class RetinaNeuron(HHNeuron):
         super().__init__(bias_current)
         
         # Add additional current clamp for stimulus-driven activity
-        # This current will be active for the entire simulation duration
         self.stim_current = h.IClamp(self.soma(0.5))
         self.stim_current.delay = 0
-        self.stim_current.dur = 1e9  # Effectively continuous
+        self.stim_current.dur = 1e9  # Continuous
         self.stim_current.amp = 0  # Will be set based on pixel value
 
+# Define the HH network class
 class HHNetwork:
     def __init__(self, input_size=400, hidden_size=16, output_size=2, 
                  scaled_weights=None):
@@ -111,18 +111,14 @@ class HHNetwork:
         # Create hidden layer neurons (with bias from ANN)
         self.hidden_neurons = []
         for i in range(self.hidden_size):
-            # Convert ANN bias to baseline current
             bias_current = self.scaled_weights['input_to_hidden_bias'][i]
-            # Ensure minimum baseline current
             bias_current = max(bias_current, 0.05)  
             self.hidden_neurons.append(HHNeuron(bias_current=bias_current))
         
         # Create output layer neurons
         self.output_neurons = []
         for i in range(self.output_size):
-            # Convert ANN bias to baseline current
             bias_current = self.scaled_weights['hidden_to_output_bias'][i]
-            # Ensure minimum baseline current
             bias_current = max(bias_current, 0.05)
             self.output_neurons.append(HHNeuron(bias_current=bias_current))
         
@@ -130,121 +126,89 @@ class HHNetwork:
         self.r2h_connections = []
         for i, retina_neuron in enumerate(self.retina_neurons):
             for j, hidden_neuron in enumerate(self.hidden_neurons):
-                # Get weight from ANN
                 weight = self.scaled_weights['input_to_hidden'][j, i]
                 
-                # Only create excitatory connections for positive weights
                 if weight > 0:
                     syn = h.ExpSyn(hidden_neuron.soma(0.5))
                     syn.tau = 2  # ms - fast AMPA-like synapse
-                    syn.e = 0    # mV - excitatory reversal potential
-                    
+                    syn.e = 0    # mV - excitatory reversal
                     nc = h.NetCon(retina_neuron.soma(0.5)._ref_v, syn, sec=retina_neuron.soma)
-                    nc.threshold = 0  # mV
-                    nc.delay = 1      # ms
-                    nc.weight[0] = abs(weight)  # μS (conductance)
-                    
+                    nc.threshold = 0
+                    nc.delay = 1
+                    nc.weight[0] = abs(weight)
                     self.r2h_connections.append((syn, nc))
-                
-                # Create inhibitory connections for negative weights
                 elif weight < 0:
                     syn = h.ExpSyn(hidden_neuron.soma(0.5))
-                    syn.tau = 5   # ms - slower GABA-like synapse
-                    syn.e = -80   # mV - inhibitory reversal potential
-                    
+                    syn.tau = 5  # ms - slower GABA-like synapse
+                    syn.e = -80  # mV - inhibitory reversal
                     nc = h.NetCon(retina_neuron.soma(0.5)._ref_v, syn, sec=retina_neuron.soma)
-                    nc.threshold = 0  # mV
-                    nc.delay = 1      # ms  
-                    nc.weight[0] = abs(weight)  # μS (conductance)
-                    
+                    nc.threshold = 0
+                    nc.delay = 1
+                    nc.weight[0] = abs(weight)
                     self.r2h_connections.append((syn, nc))
         
         # Create synaptic connections (hidden->output)
         self.h2o_connections = []
         for i, hidden_neuron in enumerate(self.hidden_neurons):
             for j, output_neuron in enumerate(self.output_neurons):
-                # Get weight from ANN
                 weight = self.scaled_weights['hidden_to_output'][j, i]
                 
-                # Only create excitatory connections for positive weights
                 if weight > 0:
                     syn = h.ExpSyn(output_neuron.soma(0.5))
-                    syn.tau = 2  # ms
-                    syn.e = 0    # mV
-                    
+                    syn.tau = 2
+                    syn.e = 0
                     nc = h.NetCon(hidden_neuron.soma(0.5)._ref_v, syn, sec=hidden_neuron.soma)
-                    nc.threshold = 0  # mV
-                    nc.delay = 1      # ms
-                    nc.weight[0] = abs(weight)  # μS
-                    
+                    nc.threshold = 0
+                    nc.delay = 1
+                    nc.weight[0] = abs(weight)
                     self.h2o_connections.append((syn, nc))
-                
-                # Create inhibitory connections for negative weights
                 elif weight < 0:
                     syn = h.ExpSyn(output_neuron.soma(0.5))
-                    syn.tau = 5   # ms
-                    syn.e = -80   # mV
-                    
+                    syn.tau = 5
+                    syn.e = -80
                     nc = h.NetCon(hidden_neuron.soma(0.5)._ref_v, syn, sec=hidden_neuron.soma)
-                    nc.threshold = 0  # mV
-                    nc.delay = 1      # ms
-                    nc.weight[0] = abs(weight)  # μS
-                    
+                    nc.threshold = 0
+                    nc.delay = 1
+                    nc.weight[0] = abs(weight)
                     self.h2o_connections.append((syn, nc))
     
     def set_stimulus(self, image_array):
-        """Set stimulus current based on image values (0-255)"""
-        # Normalize and reshape image to match input size
+        """Set stimulus current for retina neurons based on the image pixel intensities"""
         flat_image = image_array.flatten()
-        
-        # Set stimulus current for each retina neuron based on pixel value
-        # Dark pixels (0) get strong current, light pixels (255) get no additional current
         for i, pixel_value in enumerate(flat_image):
-            # Normalize pixel value to [0,1] and invert (dark->1, light->0)
             normalized_value = 1.0 - (pixel_value / 255.0)
-            
-            # Set stimulus current (scale by some factor, e.g., 0.5 nA)
-            current_magnitude = normalized_value * 0.5  # nA
-            
-            # Set stimulus amplitude - duration is already set to continuous in the RetinaNeuron class
+            current_magnitude = normalized_value * 0.5  # nA scaling
             self.retina_neurons[i].stim_current.amp = current_magnitude
     
     def run_simulation(self):
         """Run the NEURON simulation"""
-        # Set up simulation parameters
         h.dt = self.dt
         h.tstop = self.sim_time
-        
-        # Initialize and run
-        h.finitialize(-65)  # Initialize membrane potentials
+        h.finitialize(-65)
         h.continuerun(self.sim_time)
     
     def get_output_decision(self):
-        """Get the orientation decision based on output neuron spike counts"""
-        # Count spikes for each output neuron
-        # Swap indices: output_neurons[1] is horizontal, output_neurons[0] is vertical
+        """Decide orientation based on spike counts in output neurons"""
+        # Convention: output_neurons[1] = Horizontal; output_neurons[0] = Vertical
         horizontal_spikes = len(self.output_neurons[1].spike_times)
         vertical_spikes = len(self.output_neurons[0].spike_times)
-        
-        # Compare spike counts
         if horizontal_spikes > vertical_spikes:
             return "Horizontal", horizontal_spikes, vertical_spikes
         else:
             return "Vertical", horizontal_spikes, vertical_spikes
     
     def plot_results(self, image_array=None, decision=None):
-        """Plot the simulation results"""
+        """Plot simulation results"""
         plt.figure(figsize=(15, 10))
-        
-        # Create a 3x4 grid to accommodate all plots
-        # Plot the input image if provided
         if image_array is not None:
             plt.subplot(3, 4, 1)
             plt.imshow(image_array, cmap='gray')
-            plt.title(f"Input Image: {decision[0]}")
+            if decision:
+                plt.title(f"Input Image:\nPredicted {decision[0]}")
+            else:
+                plt.title("Input Image")
             plt.axis('off')
         
-        # Sample neurons from each layer
         layers = [
             ("Retina", self.retina_neurons, 2),
             ("Hidden", self.hidden_neurons, 2),
@@ -254,34 +218,28 @@ class HHNetwork:
         plot_idx = 2
         for layer_name, neurons, num_samples in layers:
             sample_indices = np.linspace(0, len(neurons)-1, num_samples, dtype=int)
-            
             for i, idx in enumerate(sample_indices):
                 neuron = neurons[idx]
                 t = np.array(neuron.t_vec)
                 v = np.array(neuron.v_vec)
-                
                 plt.subplot(3, 4, plot_idx)
                 plt.plot(t, v)
                 title = f"{layer_name} Neuron {idx+1}"
                 if layer_name == "Output":
-                    title += f" ({'Vertical' if idx==0 else 'Horizontal'})"
-                    if decision:
-                        title += f"\nSpikes: {len(neuron.spike_times)}"
+                    title += f"\nSpikes: {len(neuron.spike_times)}"
                 plt.title(title)
                 plt.xlabel('Time (ms)')
                 plt.ylabel('Vm (mV)')
                 plt.ylim(-80, 50)
-                
                 plot_idx += 1
-        
         plt.tight_layout()
-        return plt.gcf()  # Return the figure for display or saving
+        return plt.gcf()
 
 def load_and_preprocess_image(image_path, target_size=(20, 20)):
-    """Load and preprocess an image for network input"""
-    img = Image.open(image_path).convert('L')  # Convert to grayscale
-    img = img.resize(target_size)  # Resize to target size
-    img_array = np.array(img)  # Convert to numpy array
+    """Load a grayscale image and resize it"""
+    img = Image.open(image_path).convert('L')
+    img = img.resize(target_size)
+    img_array = np.array(img)
     return img_array
 
 def main():
@@ -295,7 +253,6 @@ def main():
     weights = load_ann_weights(model_path, input_size, hidden_size)
     
     # Scale weights for biophysical model
-    # Note: These scaling factors need careful tuning
     scaled_weights = scale_weights(weights, input_scaling=0.01, hidden_scaling=0.05)
     
     # Load and preprocess test image
@@ -305,13 +262,13 @@ def main():
     network = HHNetwork(input_size=input_size, hidden_size=hidden_size, 
                         scaled_weights=scaled_weights)
     
-    # Set stimulus based on image
+    # Set the stimulus in the retina based on the image
     network.set_stimulus(img_array)
     
     # Run simulation
     network.run_simulation()
     
-    # Get decision
+    # Get decision based on output spikes
     decision = network.get_output_decision()
     print(f"Network decision: {decision[0]}")
     print(f"Spike counts - Horizontal: {decision[1]}, Vertical: {decision[2]}")
@@ -322,70 +279,43 @@ def main():
 
 def test_all_images():
     """Run the HH network on all testing images and calculate accuracy"""
-    import os
     import matplotlib.pyplot as plt
     
-    # Parameters
     model_path = "grating_model_weights.pth"
     test_dir = "testing_images"
-    input_size = 20 * 20  # 400 pixels
+    input_size = 20 * 20  
     hidden_size = 16
     
-    # Load ANN weights
     weights = load_ann_weights(model_path, input_size, hidden_size)
-    
-    # Scale weights for biophysical model
     scaled_weights = scale_weights(weights, input_scaling=0.01, hidden_scaling=0.05)
     
-    # Prepare to collect results
     results = []
     correct_predictions = 0
     total_predictions = 0
-    
-    # Get all image files in the testing directory
     image_files = [f for f in os.listdir(test_dir) if f.endswith('.png')]
     
     print(f"Testing HH network on {len(image_files)} images...")
     
-    # Create figure for displaying results
     fig, axes = plt.subplots(5, 5, figsize=(15, 15))
     axes = axes.flatten()
     
-    # Process each image
     for i, filename in enumerate(sorted(image_files)):
-        if i >= 25:  # Limit to 25 images for the plot
+        if i >= 25:
             break
-            
-        # Extract true label from filename
         true_orientation = "Horizontal" if filename.startswith("horizontal") else "Vertical"
-        
-        # Extract angle from filename
         angle = filename.split('_')[-1].split('.')[0]
-        
-        # Load and preprocess image
         image_path = os.path.join(test_dir, filename)
         img_array = load_and_preprocess_image(image_path)
         
-        # Create HH network
         network = HHNetwork(input_size=input_size, hidden_size=hidden_size, 
                             scaled_weights=scaled_weights)
-        
-        # Set stimulus based on image
         network.set_stimulus(img_array)
-        
-        # Run simulation
         network.run_simulation()
-        
-        # Get decision
         decision, h_spikes, v_spikes = network.get_output_decision()
-        
-        # Check if prediction is correct
         is_correct = decision == true_orientation
         if is_correct:
             correct_predictions += 1
         total_predictions += 1
-        
-        # Store result
         result = {
             'filename': filename,
             'true_orientation': true_orientation,
@@ -396,41 +326,31 @@ def test_all_images():
             'angle': angle
         }
         results.append(result)
-        
-        # Plot the image and decision (for first 25 images)
         if i < 25:
             ax = axes[i]
             ax.imshow(img_array, cmap='gray')
             color = 'green' if is_correct else 'red'
-            title = f"{angle}°: {decision}\n({h_spikes} vs {v_spikes})"
+            title = f"{angle}°: {decision}\n(H:{h_spikes} vs V:{v_spikes})"
             ax.set_title(title, color=color)
             ax.axis('off')
     
-    # Calculate accuracy
     accuracy = (correct_predictions / total_predictions) * 100 if total_predictions > 0 else 0
-    
-    # Print results
     print(f"\nOverall Accuracy: {accuracy:.2f}% ({correct_predictions}/{total_predictions})")
-    print("\nDetailed Results:")
     
-    # Group results by angle
     angle_results = {}
     for result in results:
         angle = result['angle']
         if angle not in angle_results:
             angle_results[angle] = {'correct': 0, 'total': 0}
-        
         angle_results[angle]['total'] += 1
         if result['correct']:
             angle_results[angle]['correct'] += 1
     
-    # Print accuracy by angle
     print("\nAccuracy by Angle:")
     for angle, counts in sorted(angle_results.items(), key=lambda x: int(x[0])):
         acc = (counts['correct'] / counts['total']) * 100 if counts['total'] > 0 else 0
         print(f"  Angle {angle}°: {acc:.2f}% ({counts['correct']}/{counts['total']})")
     
-    # Print individual results
     print("\nIndividual Image Results:")
     for result in results:
         status = "✓" if result['correct'] else "✗"
@@ -438,10 +358,8 @@ def test_all_images():
               f"(Actual: {result['true_orientation']}) "
               f"[H: {result['horizontal_spikes']}, V: {result['vertical_spikes']}]")
     
-    # Show the plot
     plt.tight_layout()
     plt.show()
-    
     return results, accuracy
 
 if __name__ == "__main__":
