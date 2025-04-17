@@ -1,2 +1,4 @@
 testing_images
 grating_images
+.DS_Store
+__pycache__/
