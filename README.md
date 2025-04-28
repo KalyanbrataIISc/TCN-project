@@ -8,20 +8,31 @@ This project demonstrates the conversion of a trained Artificial Neural Network 
   - `model.py` — Defines the ANN architecture.
   - `train_ann.py` — Trains the ANN on generated line images.
   - `save_weights.py` — Exports trained ANN weights to `.npy` files for SNN use.
+  - `visualize_ann.py` — Visualizes the ANN as a network graph.
 - `snn/`
   - `build_snn.py` — Loads exported ANN weights for SNN construction.
-  - `simulate_snn.py` — Runs the SNN simulation using Brian2.
+  - `simulate_snn.py` — Runs the SNN simulation using Brian2 and exported weights.
 - `data/`
-  - `generate_images.py` — Functions for generating synthetic line images.
+  - `generate_images.py` — Functions for generating synthetic line images and loading test/train splits.
 - `tests/`
   - `ann_angle_response.py` — Plots ANN output vs. line angle.
   - `snn_angle_response.py` — Plots SNN firing rates vs. line angle.
   - `snn_withNoise_response.py` — Plots SNN firing rates vs. line angle with background noise (robustness analysis).
-  - `classify.py` — Compares ANN and SNN classification performance.
-- `trial_attempts/` — Standalone scripts for end-to-end experiments.
+  - `classify.py` — Compares ANN and SNN classification performance using logistic regression.
+- `trial_attempts/` — Standalone scripts for end-to-end experiments and prototyping.
 - `results/` — Saved models and plots.
-- `weights/` — Exported ANN weights for SNN.
+- `weights/`
+  - `saved_ann_weights/` — Exported ANN weights for SNN (as `.npy` files).
+  - `saved_ann_model.h5` — (optional) Saved Keras model.
 - `config.py` — Central configuration for hyperparameters and paths.
+
+## Pipeline Overview
+
+1. **Data Generation**: Synthetic 20×20 px line images at various angles are generated using `data/generate_images.py`.
+2. **ANN Training**: The ANN is trained on these images using `ann/train_ann.py` (Keras, MLP with 3 hidden layers).
+3. **Weight Export**: Trained weights are exported to `.npy` files using `ann/save_weights.py` for SNN use.
+4. **SNN Simulation**: The SNN, mimicking the ANN architecture with LIF neurons (Brian2), is constructed and simulated using `snn/simulate_snn.py` and `snn/build_snn.py`.
+5. **Analysis & Visualization**: Various scripts in `tests/` analyze and visualize the responses of both ANN and SNN, including robustness to noise and classification accuracy.
 
 ## Setup
 
@@ -52,12 +63,17 @@ This project demonstrates the conversion of a trained Artificial Neural Network 
    python tests/classify.py
    ```
 
+## Configuration
+
+All key hyperparameters and paths are set in `config.py` for easy modification and reproducibility.
+
 ## Notes
 
 - All images are synthetic 20×20 px lines at various angles.
 - The ANN is a simple 3-layer MLP; the SNN mimics its structure using LIF neurons in Brian2.
-- The project includes analysis of SNN robustness to background noise.
+- The project includes analysis of SNN robustness to background noise and direct comparison of ANN/SNN outputs.
 - Plots and results are saved in the `results/plots/` directory.
+- Modular design: You can swap out data generation, model, or SNN simulation components as needed.
 
 ## Citation
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# classify_snn_full.py — load ANN & SNN, sweep angles, train H/V classifiers
+# classify.py — load ANN & SNN, sweep angles, train H/V classifiers
 
 import os
 import numpy as np

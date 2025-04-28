@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# angle_response.py — plot ANN outputs vs. line angle
+# ann_angle_response.py — plot ANN outputs vs. line angle
 
 import numpy as np
 import matplotlib.pyplot as plt

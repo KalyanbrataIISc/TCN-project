@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# angle_response_snn.py — plot SNN firing‐rates vs. line angle
+# snn_angle_response.py — plot SNN firing‐rates vs. line angle
 
 import numpy as np
 import matplotlib.pyplot as plt

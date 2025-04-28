@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# angle_response_snn_noise.py — plot SNN firing‐rates vs. line angle w/ background noise
+# snn_withNoise_response.py — plot SNN firing‐rates vs. line angle w/ background noise
 
 import numpy as np
 import matplotlib.pyplot as plt
