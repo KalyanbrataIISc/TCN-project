@@ -19,4 +19,4 @@ BIAS_SCALE  = 0.3
 # ─── paths & outputs ─────────────
 ROOT       = Path(__file__).parent
 WEIGHT_DIR = ROOT / "weights" / "saved_ann_weights"
-OUT_FIG    = "snn_comparison.png"
+OUT_FIG    = "snn_response.png"
