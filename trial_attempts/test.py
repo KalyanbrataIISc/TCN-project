@@ -11,6 +11,7 @@ from brian2 import (
     NeuronGroup, Synapses, PoissonGroup, SpikeMonitor, Network,
     mV, Hz, ms
 )
+from config import PLOTS
 
 # ─── hyperparameters ────────────────────────────────────────────────────────────
 IMG_SIZE    = 20       # 20×20 px images
@@ -24,7 +25,7 @@ BATCH_SIZE  = 16
 SIM_TIME_MS = 500.     # SNN sim per image
 MAX_RATE_HZ = 300.     # peak Poisson
 BIAS_SCALE  = 0.3      # bias→mV
-OUT_FIG     = "snn_comparison.png"
+OUT_FIG     = PLOTS / "snn_comparison.png"
 
 # ─── 1) DATA GENERATION ─────────────────────────────────────────────────────────
 def make_line(angle_deg):
