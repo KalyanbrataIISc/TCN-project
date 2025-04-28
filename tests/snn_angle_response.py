@@ -9,6 +9,7 @@ from brian2 import (
     NeuronGroup, Synapses, PoissonGroup, SpikeMonitor, Network,
     mV, Hz, ms
 )
+from config import PLOTS
 
 # ─── hyperparameters ────────────────────────────────────────────────
 IMG_SIZE    = 20                     # image is 20×20 px
@@ -17,7 +18,7 @@ ANGLES      = np.linspace(0,180,37)  # 0°,5°,10°, …,180°
 SIM_TIME_MS = 500.                   # ms per image
 MAX_RATE_HZ = 300.                   # peak Poisson
 BIAS_SCALE  = 0.3                    # bias→mV
-OUT_FIG     = "snn_angle_response.png"
+OUT_FIG     = PLOTS / "snn_angle_response.png"
 
 # ─── helper to draw a single‐line image ──────────────────────────────
 def make_line(angle_deg):

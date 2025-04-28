@@ -39,7 +39,7 @@ def main():
     plt.plot(history.history["val_loss"], label="val loss")
     plt.legend()
     plt.xlabel("Epoch"); plt.ylabel("MSE")
-    loss_fig = RESULT_DIR / "ann_loss.png"
+    loss_fig = RESULT_DIR / "plots" / "ann_loss.png"
     plt.savefig(loss_fig, dpi=300)
     print("✅ Saved loss plot to", loss_fig)
 

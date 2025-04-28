@@ -5,11 +5,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image, ImageDraw
 from tensorflow.keras.models import load_model
+from config import PLOTS
 
 # ─── hyperparameters ───────────────────────────────────────────────
 IMG_SIZE   = 20                 # image is 20×20 px
 MODEL_PATH = "results/trained_ann.h5"  # path to your saved ANN
-OUT_PLOT   = "ann_angle_response.png"
+OUT_PLOT   = PLOTS / "ann_angle_response.png"
 
 # angles at which to test (0° = horizontal, 90° = vertical)
 ANGLES = np.linspace(0, 180, 37)  # every 5° from 0 to 180
