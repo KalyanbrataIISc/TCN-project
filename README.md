@@ -1,6 +1,6 @@
 # TCN-project: ANN-to-SNN Conversion for Line Orientation Classification
 
-This project demonstrates the conversion of a trained Artificial Neural Network (ANN) to a Spiking Neural Network (SNN) for classifying simple line images (horizontal vs. vertical) and analyzing their responses. It includes code for data generation, ANN training, weight export, SNN simulation, and response analysis.
+This project demonstrates the conversion of a trained Artificial Neural Network (ANN) to a Spiking Neural Network (SNN) for classifying simple line images (horizontal vs. vertical) and analyzing their responses. It includes code for data generation, ANN training, weight export, SNN simulation, response analysis, and robustness to background noise.
 
 ## Project Structure
 
@@ -16,6 +16,7 @@ This project demonstrates the conversion of a trained Artificial Neural Network 
 - `tests/`
   - `ann_angle_response.py` — Plots ANN output vs. line angle.
   - `snn_angle_response.py` — Plots SNN firing rates vs. line angle.
+  - `snn_withNoise_response.py` — Plots SNN firing rates vs. line angle with background noise (robustness analysis).
   - `classify.py` — Compares ANN and SNN classification performance.
 - `trial_attempts/` — Standalone scripts for end-to-end experiments.
 - `results/` — Saved models and plots.
@@ -47,6 +48,7 @@ This project demonstrates the conversion of a trained Artificial Neural Network 
    ```bash
    python tests/ann_angle_response.py
    python tests/snn_angle_response.py
+   python tests/snn_withNoise_response.py
    python tests/classify.py
    ```
 
@@ -54,6 +56,7 @@ This project demonstrates the conversion of a trained Artificial Neural Network 
 
 - All images are synthetic 20×20 px lines at various angles.
 - The ANN is a simple 3-layer MLP; the SNN mimics its structure using LIF neurons in Brian2.
+- The project includes analysis of SNN robustness to background noise.
 - Plots and results are saved in the `results/plots/` directory.
 
 ## Citation
